@@ -1,0 +1,12 @@
+# Service unit for the carscraper
+
+[Unit]
+Description=Scrape cars from the poolsite
+Wants=carscraper.timer
+
+[Service]
+Type=oneshot
+ExecStart=/home/username/carScraper/carScraper.py
+
+[Install]
+WantedBy=multi-user.target
