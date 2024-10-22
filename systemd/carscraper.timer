@@ -2,11 +2,10 @@
 
 [Unit]
 Description=Scrape cars from the poolsite
-Requires=carscraper.service
 
 [Timer]
 Unit=carscraper.service
-OnCalendar=*-*-* *:*/2:00
+OnCalendar=*-*-* *:0/2:00
 
 [Install]
 WantedBy=timers.target

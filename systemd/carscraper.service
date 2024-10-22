@@ -6,7 +6,9 @@ Wants=carscraper.timer
 
 [Service]
 Type=oneshot
-ExecStart=/home/username/carScraper/carScraper.py
+User=username
+WorkingDirectory=/home/username/carScraper
+ExecStart=/bin/bash systemd/carscraper.sh
 
 [Install]
 WantedBy=multi-user.target
