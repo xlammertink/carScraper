@@ -1,0 +1,14 @@
+# Service unit for the carscraper
+
+[Unit]
+Description=Scrape cars from the poolsite
+Wants=carscraper.timer
+
+[Service]
+Type=oneshot
+User=username
+WorkingDirectory=/home/username/carScraper
+ExecStart=/bin/bash systemd/carscraper.sh
+
+[Install]
+WantedBy=multi-user.target

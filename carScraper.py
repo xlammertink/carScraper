@@ -64,7 +64,8 @@ class PoolScraper:
 
         # Create a (headless) browser instance
         options = webdriver.ChromeOptions()
-        # options.add_argument('--headless') # Run Chrome in headless mode, will most probably fckup images
+        options.add_argument('--headless') # Run Chrome in headless mode, will most probably fckup images
+        options.add_argument('--window-size=1024,768')
         self.driver = webdriver.Chrome(options=options)
 
         # Ensure data folder is present
@@ -85,9 +86,11 @@ class PoolScraper:
         # Log in
         wait.until(EC.presence_of_element_located((By.XPATH, '//button[text()="Login"]'))).send_keys(Keys.RETURN)
 
+        # Wait a little to properly log in
+        time.sleep(3)
+
     def getCarUrls(self):
         # Wait a bit for all cars to be loaded
-        time.sleep(3)
         wait = WebDriverWait(self.driver, 10)
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'osui-accordion-item')))
 
@@ -168,7 +171,7 @@ class PoolScraper:
         # Return data
         return carData
 
-    def downloadImages(self, carUrl, carLicenseplate):
+    def getImageUrls(self, carUrl):
         # Go to car page
         self.driver.get(carUrl)
         wait = WebDriverWait(self.driver, 10)
@@ -177,9 +180,22 @@ class PoolScraper:
         leftSide = wait.until(EC.presence_of_element_located((By.ID, 'Container_Images')))
         carImages = leftSide.find_elements(By.TAG_NAME, 'img')
 
+        # Build list with URLs of images
+        urls = []
+        for image in carImages:
+            urls.append(image.get_attribute("src"))
+
+        # Return list
+        return urls
+
+    def downloadImages(self, carImageUrls, carLicenseplate):
         # Download images
         downloadedFiles = []
-        for i in range(1, len(carImages)):
+        for i in range(1, len(carImageUrls)):
+            # Go to image
+            self.driver.get(carImageUrls[i])
+            wait = WebDriverWait(self.driver, 10)
+
             # Create directory
             carDataDirectory = "data/" + carLicenseplate
             if not os.path.isdir(carDataDirectory):
@@ -187,9 +203,9 @@ class PoolScraper:
 
             # Download image
             imgFilename = str(i) + ".png"
-            carImages[i].click() # Select small image
-            carImages[0].screenshot(carDataDirectory + "/" + imgFilename) # Screenshot larger image
+            self.driver.save_screenshot(carDataDirectory + "/" + imgFilename)
 
+            # Keep track of downloaded files
             downloadedFiles.append(carDataDirectory + "/" + imgFilename)
 
         # Return filenames of downloaded files
@@ -306,7 +322,11 @@ for url in urlList:
         carData = scraper.getData(url, carDetails)
 
         # Download images
-        carImages = scraper.downloadImages(url, carData["licenseplate"])
+        carImageUrls = scraper.getImageUrls(url)
+        imageScraper = PoolScraper()
+        imageScraper.login(loginName, loginPassword)
+        carImages = imageScraper.downloadImages(carImageUrls, carData["licenseplate"])
+        imageScraper.close()
 
         # Notify on Telegram
         telegram.sendMessage(carData["name"])
